@@ -321,9 +321,9 @@ ngx_http_google_request_parser(ngx_http_request_t    * r,
   if (!ctx->args) return NGX_ERROR;
   
   // parse cookies
-  if (r->headers_in.cookies.nelts) {
-    ngx_table_elt_t ** ck = r->headers_in.cookies.elts;
-    ctx->cookies = ngx_http_google_explode_kv(r, &(*ck)->value, ";");
+  if (r->headers_in.cookie != NULL) {
+    ngx_table_elt_t * ck = r->headers_in.cookie;
+    ctx->cookies = ngx_http_google_explode_kv(r, &ck->value, ";");
   } else {
     ctx->cookies = ngx_array_create(r->pool, 4, sizeof(ngx_keyval_t));
   }
@@ -370,14 +370,12 @@ static ngx_int_t
 ngx_http_google_request_generater(ngx_http_request_t    * r,
                                   ngx_http_google_ctx_t * ctx)
 {
-  ngx_uint_t i;
   ngx_table_elt_t *  tb;
-  ngx_table_elt_t ** ptr;
   
   ngx_str_t * cookie = ngx_http_google_implode_kv(r, ctx->cookies, "; ");
   if (!cookie) return NGX_ERROR;
   
-  if (!r->headers_in.cookies.nelts)
+  if (r->headers_in.cookie == NULL)
   {
     tb = ngx_list_push(&r->headers_in.headers);
     if (!tb) return NGX_ERROR;
@@ -388,9 +386,8 @@ ngx_http_google_request_generater(ngx_http_request_t    * r,
     
   } else {
     
-    ptr = r->headers_in.cookies.elts;
-    for (i = 0; i < r->headers_in.cookies.nelts; i++) {
-      ptr[i]->value = *cookie;
+    for (ngx_table_elt_t *r_cookie = r->headers_in.cookie; r_cookie != NULL; r_cookie = r_cookie->next) {
+      r_cookie->value = *cookie;
     }
     
   }
